@@ -4,12 +4,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { getConfiguration } from './utils/configuration';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
+import helmet from 'helmet';
+import * as compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configuration = getConfiguration();
   const logger = new Logger('Bootstrap');
+
+  app.use(helmet());
+  app.use(compression());
 
   // Swagger setup
   const config = new DocumentBuilder()
