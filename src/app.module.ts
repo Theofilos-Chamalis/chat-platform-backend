@@ -8,6 +8,7 @@ import { GroupsModule } from './groups/groups.module';
 import { ConfigModule } from '@nestjs/config';
 import { getConfiguration } from './utils/configuration';
 import { MongooseModule } from '@nestjs/mongoose';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     UsersModule,
     GroupsModule,
     ChatsModule,
+    CommonModule,
   ],
   controllers: [AppController],
   providers: [AppService],
