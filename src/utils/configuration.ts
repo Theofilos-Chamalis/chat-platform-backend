@@ -23,6 +23,11 @@ export const getConfiguration = () => {
   const dbName = process.env.DB_NAME;
   const dbAuth = process.env.DB_AUTH;
 
+  const jwtSecret = process.env.JWT_SECRET || 'secret';
+  const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '1d';
+  const encryptionKey = process.env.ENCRYPTION_KEY || 'encryptionKey';
+  const encryptionIv = process.env.ENCRYPTION_IV || 'encryptionIv';
+
   let connectionUrl: string = '';
   const dbAuthString =
     dbAuth?.toLowerCase() === 'true' ? `${dbUser}:${dbPassword}@` : '';
@@ -62,6 +67,12 @@ export const getConfiguration = () => {
       port: dbPort,
       name: dbName,
       connectionUrl,
+    },
+    authCrypto: {
+      jwtSecret,
+      jwtExpiresIn,
+      encryptionKey,
+      encryptionIv,
     },
   };
 };
