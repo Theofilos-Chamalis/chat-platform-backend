@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './schemas/user.schema';
@@ -7,14 +7,20 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
     const { email, password } = createUserDto;
+    this.logger.debug(`Attempting to create user with email: ${email}`);
 
     const existingUser = await this.userModel.findOne({ email }).exec();
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      this.logger.warn(`User with email ${email} already exists.`);
+      throw new ConflictException(
+        `A user with email '${email}' already exists.`,
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -25,6 +31,9 @@ export class UsersService {
     });
 
     const user = await createdUser.save();
+    this.logger.log(
+      `Successfully created user with ID: ${user._id.toString()}`,
+    );
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user.toObject();
@@ -32,10 +41,12 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
+    this.logger.debug(`Searching for user with email: ${email}`);
     return this.userModel.findOne({ email }).exec();
   }
 
   async findById(id: string): Promise<UserDocument | null> {
+    this.logger.debug(`Searching for user with ID: ${id}`);
     return this.userModel.findById(id).exec();
   }
 }

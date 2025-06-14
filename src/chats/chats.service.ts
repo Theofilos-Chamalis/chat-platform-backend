@@ -1,26 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Message, MessageDocument } from './schemas/message.schema';
+import { SendMessageDto } from './dto/send-message.dto';
 
 @Injectable()
 export class ChatsService {
+  private readonly logger = new Logger(ChatsService.name);
+
   constructor(
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
   ) {}
 
-  async createMessage(content: string, senderId: string, groupId: string) {
-    const newMessage = new this.messageModel({
-      content,
-      sender: senderId,
+  async createMessage(
+    sendMessageDto: SendMessageDto,
+    senderId: string,
+  ): Promise<MessageDocument> {
+    const { groupId, content } = sendMessageDto;
+    this.logger.debug(`User ${senderId} creating message in group ${groupId}`);
+    const createdMessage = new this.messageModel({
       group: groupId,
-      timestamp: new Date(),
+      sender: senderId,
+      content,
     });
-
-    return newMessage.save();
+    const savedMessage = await createdMessage.save();
+    this.logger.log(
+      `Message ${savedMessage._id.toString()} saved to database.`,
+    );
+    return savedMessage.populate('sender');
   }
 
-  async getMessages(groupId: string) {
-    return this.messageModel.find({ group: groupId }).exec();
+  async getMessages(groupId: string): Promise<MessageDocument[]> {
+    this.logger.debug(`Fetching messages for group ${groupId}`);
+    return this.messageModel.find({ group: groupId }).populate('sender').exec();
   }
 }

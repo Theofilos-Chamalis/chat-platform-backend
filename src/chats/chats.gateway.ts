@@ -40,88 +40,124 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(
     private readonly chatsService: ChatsService,
+    private readonly groupsService: GroupsService,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly groupsService: GroupsService,
     private readonly encryptionService: EncryptionService,
   ) {}
 
   async handleConnection(socket: AuthenticatedSocket) {
     try {
-      const token = this.extractJwtFromSocket(socket);
+      const token = socket.handshake.headers.authorization?.split(' ')[1];
       if (!token) {
-        throw new Error('No token found');
+        throw new UnauthorizedException('No authorization token found');
       }
-
-      const payload: JwtPayload = this.jwtService.verify(token);
-      if (!payload) {
-        throw new Error('Invalid token');
-      }
-
+      const payload: JwtPayload = await this.jwtService.verifyAsync(token);
       const user = await this.usersService.findById(payload.sub);
-      if (!user) {
-        throw new Error('User not found');
-      }
 
-      socket.user = user;
-      this.logger.log(`Client connected: ${socket.id}`);
-    } catch (error) {
-      if (error instanceof Error) {
-        this.logger.error('Connection failed', error.message);
-      } else {
-        this.logger.error('Connection failed', error);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
       }
-      socket.disconnect();
+      socket.user = user;
+      this.logger.log(
+        `Client connected: ${socket.id}, User ID: ${socket.user._id.toString()}`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Connection failed: ${message}`);
+      socket.disconnect(true);
     }
   }
 
   handleDisconnect(socket: AuthenticatedSocket) {
-    this.logger.log(`Client disconnected: ${socket.id}`);
+    if (socket.user) {
+      this.logger.log(
+        `Client disconnected: ${
+          socket.id
+        }, User ID: ${socket.user._id.toString()}`,
+      );
+    } else {
+      this.logger.log(`Client disconnected: ${socket.id}`);
+    }
   }
 
   @SubscribeMessage('joinRoom')
   handleJoinRoom(
+    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody('groupId') groupId: string,
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
-    socket.join(groupId);
-    this.logger.log(`Client ${socket.id} joined room ${groupId}`);
+  ): void {
+    const userId = client.user._id.toString();
+    this.logger.log(
+      `User ${userId} attempting to join room for group ${groupId}`,
+    );
+    client.join(groupId);
+    this.server.to(groupId).emit('userJoined', { userId, groupId });
+    this.logger.log(`User ${userId} joined room for group ${groupId}`);
+  }
+
+  @SubscribeMessage('leaveRoom')
+  handleLeaveRoom(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody('groupId') groupId: string,
+  ): void {
+    const userId = client.user._id.toString();
+    this.logger.log(
+      `User ${userId} attempting to leave room for group ${groupId}`,
+    );
+    client.leave(groupId);
+    this.server.to(groupId).emit('userLeft', { userId, groupId });
+    this.logger.log(`User ${userId} left room for group ${groupId}`);
   }
 
   @SubscribeMessage('sendMessage')
   async handleMessage(
+    @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() sendMessageDto: SendMessageDto,
-    @ConnectedSocket() socket: AuthenticatedSocket,
-  ) {
+  ): Promise<void> {
+    const senderId = client.user._id.toString();
     const { groupId, content } = sendMessageDto;
-    const userId = socket.user._id.toString();
+
+    this.logger.debug(
+      `User ${senderId} sending message to group ${groupId}: "${content}"`,
+    );
 
     const group = await this.groupsService.findById(groupId);
     if (!group) {
-      throw new Error('Group not found');
+      this.logger.error(
+        `Message send failed: Group with ID ${groupId} not found.`,
+      );
+      client.emit('error', 'Group not found.');
+      return;
     }
 
     const isMember = group.members.some(
-      (member) => member._id.toString() === userId,
+      (member) => member._id.toString() === senderId,
     );
     if (!isMember) {
-      throw new UnauthorizedException('You are not a member of this group');
+      this.logger.warn(
+        `Non-member ${senderId} attempted to send message to group ${groupId}.`,
+      );
+      client.emit('error', 'You are not a member of this group.');
+      return;
     }
 
     const encryptedContent = this.encryptionService.encrypt(content);
 
     const message = await this.chatsService.createMessage(
-      encryptedContent,
-      userId,
-      groupId,
+      { groupId, content: encryptedContent },
+      senderId,
     );
 
-    const decryptedMessage = {
-      ...message.toObject(),
-      content: this.encryptionService.decrypt(message.content),
-    };
+    const populatedMessage = await message.populate('sender');
 
-    this.server.to(groupId).emit('newMessage', decryptedMessage);
+    this.server.to(groupId).emit('newMessage', {
+      ...populatedMessage.toObject(),
+      content: this.encryptionService.decrypt(populatedMessage.content),
+    });
+
+    this.logger.log(
+      `Message from ${senderId} broadcasted to group ${groupId}.`,
+    );
   }
 
   private extractJwtFromSocket(socket: Socket): string | null {
