@@ -10,7 +10,7 @@ This is a Nest.js & Typescript project responsible for the backend of a secure g
 
 Technical Specifications
 -------------------
-- This will be a REST API, using Express as the platform, mongoose which will connect to a mongodb atlas database, the built-in Nest.js logger to provide extensive logs with log levels, timestamps and context of all the end request-response lifecycle, errors as well as debug logs of any complex logic present.
+- This will be a REST API, using Express as the platform, mongoose which will connect to a mongodb atlas database, the built-in Nest.js logger to provide extensive logs with log levels, timestamps and context of all the end request-response lifecycle, errors as well as debug logs of any complex logic present. It will also use passport for jwt authentication, bcrypt and crypto-js for hashing and socket-io for real-time websocket chat communication.
 - The code should be well-commented to explain major logic blocks and any non-obvious decisions.
 - The project should use extensive validation rules based on defined DTOs and provide robust error handling with standardized and meaningful error messages.
 - Guards, pipes and interceptors should be used where necessary following DRY principles.
