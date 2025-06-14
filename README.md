@@ -5,7 +5,7 @@
 <h1 align="center">Secure Group Chat Platform API</h1>
 
 <p align="center">
-  A robust and scalable backend for a real-time, secure group messaging application, built with NestJS.
+  Backend app of a secure group messaging system that supports private and public groups, user auth, messaging and message encryption
 </p>
 
 ---
@@ -48,6 +48,15 @@ This project is the backend for a secure group messaging system. It provides a c
   - Security-focused HTTP headers using Helmet.
 - **Payload compression**: For improved performance.
 - **Structured Logging**: Comprehensive logging for requests, responses, errors, and debugging.
+- **Future Enhancements**:
+  - Switch to a more secure encryption algorithm for messages
+  - Switch to Fastify for better performance
+  - Add a cache layer to improve performance
+  - Better error handling and logging (use OpenTelemetry and Sentry or similar)
+  - Configure compression for different payload sizes
+  - Add docker file for cross platform deployment
+  - Implement tests using Jest and Supertest
+  - Implement more features (e.g. password reset)
 
 ## Technology Stack
 
