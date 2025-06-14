@@ -2,97 +2,205 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+<h1 align="center">Secure Group Chat Platform API</h1>
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+<p align="center">
+  A robust and scalable backend for a real-time, secure group messaging application, built with NestJS.
 </p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Table of Contents
 
-## Project setup
+- [Overview](#overview)
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [System Architecture](#system-architecture)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment Configuration](#environment-configuration)
+  - [Running the Application](#running-the-application)
+- [API Documentation](#api-documentation)
+- [Deployment on Koyeb](#deployment-on-koyeb)
+- [License](#license)
 
-```bash
-$ npm install
+---
+
+## Overview
+
+This project is the backend for a secure group messaging system. It provides a comprehensive REST API for managing users, groups, and messages, along with a real-time communication layer using WebSockets. The system is designed with security and scalability in mind, featuring JWT-based authentication, message encryption, and role-based access control within groups.
+
+## Features
+
+- **User Authentication**: Secure user registration and login using JSON Web Tokens (JWT).
+- **Group Management**:
+  - Create, manage, and delete public (open) and private (closed) groups.
+  - Robust role management (owner, members).
+  - Functionality to join, leave, kick, and ban users.
+  - A 48-hour cooldown period for rejoining private groups.
+  - Ownership transfer capabilities.
+- **Real-time Messaging**: WebSocket-based chat for instant communication within groups.
+- **Message Encryption**: End-to-end encryption for all messages stored in the database.
+- **API Documentation**: Interactive API documentation via Swagger UI.
+- **Security**:
+  - Request rate-limiting (throttling) to prevent abuse.
+  - Security-focused HTTP headers using Helmet.
+- **Payload compression**: For improved performance.
+- **Structured Logging**: Comprehensive logging for requests, responses, errors, and debugging.
+
+## Technology Stack
+
+- **Framework**: [NestJS](https://nestjs.com/) (v11) with Express
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
+- **Real-time Communication**: [Socket.IO](https://socket.io/)
+- **Authentication**: [Passport.js](https://www.passportjs.org/) (JWT Strategy)
+- **Security**: [Bcrypt](https://www.npmjs.com/package/bcrypt), [crypto-js](https://www.npmjs.com/package/crypto-js), [Helmet](https://helmetjs.github.io/), [@nestjs/throttler](https://www.npmjs.com/package/@nestjs/throttler)
+- **API Documentation**: [Swagger (OpenAPI)](https://swagger.io/)
+- **Validation**: [class-validator](https://github.com/typestack/class-validator)
+
+---
+
+## System Architecture
+
+The application is built using a modular architecture, promoting separation of concerns and maintainability.
+
+```mermaid
+graph TD
+    subgraph "User Interaction"
+        A[API Clients]
+    end
+
+    subgraph "Application Core (NestJS)"
+        A -- HTTP/WebSocket --> B(Load Balancer / Gateway)
+        B --> C{Authentication Middleware}
+        C -- Authenticated --> D[Controllers]
+        C -- Unauthenticated --> E[Public Endpoints]
+
+        D --> F(Services)
+        F --> G[Data Models]
+        G -- Mongoose --> H(MongoDB)
+
+        subgraph "Modules"
+            M_Auth(AuthModule)
+            M_Users(UsersModule)
+            M_Groups(GroupsModule)
+            M_Chats(ChatsModule)
+            M_Common(CommonModule)
+        end
+
+        F -- Uses --> M_Auth
+        F -- Uses --> M_Users
+        F -- Uses --> M_Groups
+        F -- Uses --> M_Chats
+        F -- Uses --> M_Common
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style H fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## Getting Started
 
-# watch mode
-$ npm run start:dev
+### Prerequisites
 
-# production mode
-$ npm run start:prod
-```
+- [Node.js](https://nodejs.org/en/) (v18 or higher)
+- [npm](https://www.npmjs.com/)
+- A running [MongoDB](https://www.mongodb.com/) instance (local or cloud-based like MongoDB Atlas).
 
-## Run tests
+### Installation
 
-```bash
-# unit tests
-$ npm run test
+1.  Clone the repository:
+    ```bash
+    git clone <your-repository-url>
+    cd chat-platform-backend
+    ```
+2.  Install the dependencies:
+    ```bash
+    npm install
+    ```
 
-# e2e tests
-$ npm run test:e2e
+### Environment Configuration
 
-# test coverage
-$ npm run test:cov
-```
+1.  In the root of the project, create a new file named `.env.development`.
+2.  Copy the contents below into the file and adjust the values for your local environment.
 
-## Deployment
+    ```dotenv
+    # Application Port
+    DEV_PORT=4040
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+    # Database Configuration
+    # For a local MongoDB instance
+    DB_HOST=localhost
+    DB_PORT=27017
+    DB_NAME=chat-platform
+    DB_USER=
+    DB_PASSWORD=
+    DB_AUTH=false
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+    # For a cloud MongoDB instance (e.g., Atlas)
+    # DB_HOST=<your-atlas-cluster-url>
+    # DB_USER=<your-db-user>
+    # DB_PASSWORD=<your-db-password>
+    # DB_NAME=<your-db-name>
+    # DB_AUTH=true
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+    # Security Configuration
+    # IMPORTANT: Use strong, randomly generated strings for production
+    JWT_SECRET=a-very-secret-key-that-should-be-changed
+    ENCRYPTION_KEY=a-secret-key-for-messages-12345
+    ENCRYPTION_IV=a-secret-iv-for-messages-123456
+    ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Running the Application
 
-## Resources
+- **Development mode with watch:**
+  ```bash
+  npm run dev
+  ```
+- **Production build:**
+  ```bash
+  npm run build
+  npm run prod
+  ```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## API Documentation
 
-## Support
+Once the application is running, you can access the interactive API documentation (powered by Swagger) at:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+**`http://localhost:4040/swagger`**
 
-## Stay in touch
+(Replace `4040` with the `DEV_PORT` you specified in your `.env.development` file if you changed it.)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
+
+## Deployment on Koyeb
+
+This application is configured for easy deployment on [Koyeb](https://www.koyeb.com/). Koyeb is a developer-friendly serverless platform that can deploy applications directly from a Git repository.
+
+### How it Works
+
+1.  **Push to GitHub**: Connect your GitHub account to Koyeb and select this repository.
+2.  **Configure Service**: Koyeb will automatically detect the Node.js application. You will need to configure the following:
+    - **Build Command**: `npm run build`
+    - **Run Command**: `npm run start:prod`
+    - **Port**: `8080` (or as configured by Koyeb).
+3.  **Environment Variables**: Add all the variables from the `.env.development.example` file (using strong, production-safe secrets) to the Koyeb service's environment variable settings.
+4.  **Deploy**: Koyeb will build and deploy the application. Future pushes to your default branch will automatically trigger new deployments.
+
+You can also use the "Deploy to Koyeb" button for a quick start:
+
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&repository=your-github-repo-url&branch=main&name=chat-api)
+
+_(Note: Remember to replace `your-github-repo-url` in the button link with your actual repository URL.)_
+
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is [MIT licensed](https/github.com/nestjs/nest/blob/master/LICENSE).
