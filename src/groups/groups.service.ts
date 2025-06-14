@@ -49,16 +49,52 @@ export class GroupsService {
       throw new NotFoundException('Group not found');
     }
 
-    if (group.members.includes(userId as any)) {
+    // Check if user is banned
+    const isBanned = group.bannedUsers.some(
+      (bannedUser) => bannedUser.user._id.toString() === userId,
+    );
+    if (isBanned) {
+      throw new ForbiddenException(
+        'You are banned from this group and cannot join.',
+      );
+    }
+
+    if (group.members.some((member) => member._id.toString() === userId)) {
       throw new ConflictException('User is already a member of this group');
     }
 
     if (group.type === 'public') {
-      group.members.push(userId as any);
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      group.members.push(user);
       await group.save();
       return { message: 'Successfully joined group' };
     } else {
-      // Private group
+      // Private group: Check for cooldown
+      const cooldownRecord = await this.leftGroupCooldownModel
+        .findOne({
+          group: groupId,
+          user: userId,
+        })
+        .sort({ leaveTime: -1 });
+
+      if (cooldownRecord) {
+        const fortyEightHours = 48 * 60 * 60 * 1000;
+        const timeSinceLeave =
+          new Date().getTime() - cooldownRecord.leaveTime.getTime();
+
+        if (timeSinceLeave < fortyEightHours) {
+          const timeLeft = fortyEightHours - timeSinceLeave;
+          const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
+          throw new ForbiddenException(
+            `You must wait ${hoursLeft} more hours before you can request to join this group again.`,
+          );
+        }
+      }
+
+      // Private group: Check for existing request
       const existingRequest = await this.joinRequestModel.findOne({
         group: groupId,
         user: userId,
