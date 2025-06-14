@@ -303,6 +303,60 @@ export class GroupsService {
     return { message: 'Ownership transferred successfully' };
   }
 
+  async addMember(groupId: string, adderId: string, newMemberId: string) {
+    const group = await this.findById(groupId);
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    // Check if the user to be added exists
+    const newMember = await this.userModel.findById(newMemberId);
+    if (!newMember) {
+      throw new NotFoundException('User to be added not found');
+    }
+
+    // Authorization check
+    if (group.type === 'private') {
+      // For private groups, only the owner can add members
+      if (group.owner._id.toString() !== adderId) {
+        throw new ForbiddenException(
+          'Only the group owner can add members to a private group.',
+        );
+      }
+    } else {
+      // For public groups, any member can add another user
+      const isAdderAMember = group.members.some(
+        (member) => member._id.toString() === adderId,
+      );
+      if (!isAdderAMember) {
+        throw new ForbiddenException(
+          'You must be a member of this group to add other users.',
+        );
+      }
+    }
+
+    // Check if the new member is already in the group
+    if (group.members.some((member) => member._id.toString() === newMemberId)) {
+      throw new ConflictException('User is already a member of this group.');
+    }
+
+    // Check if the new member is banned
+    if (
+      group.bannedUsers.some(
+        (banned) => banned.user._id.toString() === newMemberId,
+      )
+    ) {
+      throw new ForbiddenException(
+        'This user is banned and cannot be added to the group.',
+      );
+    }
+
+    group.members.push(newMember);
+    await group.save();
+
+    return { message: 'Member added successfully' };
+  }
+
   async findById(id: string): Promise<GroupDocument | null> {
     return this.groupModel.findById(id).exec();
   }

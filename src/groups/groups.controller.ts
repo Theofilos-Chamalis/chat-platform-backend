@@ -15,6 +15,7 @@ import { OwnerGuard } from './guards/owner.guard';
 import { ManageJoinRequestDto } from './dto/manage-join-request.dto';
 import { BanMemberDto } from './dto/ban-member.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
+import { AddMemberDto } from './dto/add-member.dto';
 
 @Controller('groups')
 export class GroupsController {
@@ -94,6 +95,20 @@ export class GroupsController {
       groupId,
       req.user._id.toString(),
       transferOwnershipDto.newOwnerId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/add')
+  addMember(
+    @Param('id') groupId: string,
+    @Body() addMemberDto: AddMemberDto,
+    @Request() req: { user: UserDocument },
+  ) {
+    return this.groupsService.addMember(
+      groupId,
+      req.user._id.toString(),
+      addMemberDto.memberId,
     );
   }
 }
