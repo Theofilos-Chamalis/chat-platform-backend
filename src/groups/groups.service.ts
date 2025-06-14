@@ -540,11 +540,38 @@ export class GroupsService {
 
   async findById(id: string): Promise<GroupDocument | null> {
     this.logger.debug(`Searching for group with ID: ${id}`);
-    return this.groupModel.findById(id).exec();
+    return this.groupModel
+      .findById(id)
+      .populate('owner', '-password')
+      .populate('members', '-password')
+      .populate('bannedUsers.user', '-password')
+      .exec();
+  }
+
+  async findGroupsForUser(userId: string): Promise<GroupDocument[]> {
+    this.logger.debug(`Fetching groups for user ${userId}`);
+    return this.groupModel
+      .find({ members: userId })
+      .populate('owner', '-password')
+      .populate('members', '-password')
+      .exec();
   }
 
   async findJoinRequestById(id: string): Promise<JoinRequestDocument | null> {
     this.logger.debug(`Searching for join request with ID: ${id}`);
-    return this.joinRequestModel.findById(id).exec();
+    return this.joinRequestModel
+      .findById(id)
+      .populate('user', '-password')
+      .exec();
+  }
+
+  async findJoinRequestsForGroup(
+    groupId: string,
+  ): Promise<JoinRequestDocument[]> {
+    this.logger.debug(`Fetching join requests for group ${groupId}`);
+    return this.joinRequestModel
+      .find({ group: groupId, status: 'pending' })
+      .populate('user', '-password')
+      .exec();
   }
 }

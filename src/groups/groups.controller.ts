@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   Patch,
+  Get,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -35,6 +38,96 @@ interface AuthenticatedRequest {
 @Controller('groups')
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all groups for the current user' })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of groups the user is a member of.',
+  })
+  findUserGroups(@Request() req: AuthenticatedRequest) {
+    return this.groupsService.findGroupsForUser(req.user._id.toString());
+  }
+
+  @Get(':groupId')
+  @ApiOperation({ summary: 'Get details for a specific group' })
+  @ApiParam({ name: 'groupId', description: 'The ID of the group' })
+  @ApiResponse({ status: 200, description: 'The group details.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden. User is not a member of the group.',
+  })
+  @ApiResponse({ status: 404, description: 'Group not found.' })
+  async findOne(
+    @Param('groupId') groupId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const group = await this.groupsService.findById(groupId);
+    if (!group) {
+      throw new NotFoundException(`Group with ID '${groupId}' not found.`);
+    }
+
+    const isMember = group.members.some(
+      (member: UserDocument) =>
+        member._id.toString() === req.user._id.toString(),
+    );
+
+    if (!isMember) {
+      throw new ForbiddenException('You are not a member of this group.');
+    }
+
+    return group;
+  }
+
+  @Get(':groupId/members')
+  @ApiOperation({ summary: 'Get the list of members for a specific group' })
+  @ApiParam({ name: 'groupId', description: 'The ID of the group' })
+  @ApiResponse({ status: 200, description: 'The list of group members.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden. User is not a member of the group.',
+  })
+  @ApiResponse({ status: 404, description: 'Group not found.' })
+  async getGroupMembers(
+    @Param('groupId') groupId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const group = await this.groupsService.findById(groupId);
+    if (!group) {
+      throw new NotFoundException(`Group with ID '${groupId}' not found.`);
+    }
+
+    const isMember = group.members.some(
+      (member: UserDocument) =>
+        member._id.toString() === req.user._id.toString(),
+    );
+
+    if (!isMember) {
+      throw new ForbiddenException(
+        'You must be a member of this group to view its members.',
+      );
+    }
+
+    return group.members;
+  }
+
+  @Get(':groupId/join-requests')
+  @UseGuards(OwnerGuard)
+  @ApiOperation({
+    summary: 'Get pending join requests for a group (Owner only)',
+  })
+  @ApiParam({ name: 'groupId', description: 'The ID of the group' })
+  @ApiResponse({
+    status: 200,
+    description: 'A list of pending join requests.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden. Only the owner can view join requests.',
+  })
+  getJoinRequests(@Param('groupId') groupId: string) {
+    return this.groupsService.findJoinRequestsForGroup(groupId);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new group' })
