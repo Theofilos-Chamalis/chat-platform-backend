@@ -1,21 +1,34 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
 import { getConfiguration } from './utils/configuration';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
-  const bootstrapStartTimestamp = performance.now();
-  const serverConfiguration = getConfiguration().server;
-
   const app = await NestFactory.create(AppModule);
-  await app.listen(serverConfiguration.port ?? '0.0.0.0');
 
-  const bootstrapDuration =
-    Math.floor(((performance.now() - bootstrapStartTimestamp) * 100) / 1000) /
-    100;
+  const configuration = getConfiguration();
+  const logger = new Logger('Bootstrap');
 
-  Logger.debug(
-    `Listening at ${serverConfiguration.serverUrl}:${serverConfiguration.port} in ${bootstrapDuration}s`,
+  // Swagger setup
+  const config = new DocumentBuilder()
+    .setTitle('Chat Platform API')
+    .setDescription('The API documentation for the Chat Platform.')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('swagger', app, document);
+
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  await app.listen(configuration.server.port ?? '0.0.0.0');
+  logger.log(
+    `Application is running on: http://localhost:${configuration.server.port}`,
+  );
+  logger.log(
+    `Swagger is running on: http://localhost:${configuration.server.port}/swagger`,
   );
 }
 bootstrap();
