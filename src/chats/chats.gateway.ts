@@ -10,7 +10,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ChatsService } from './chats.service';
 import { UsersService } from '../users/users.service';
-import { parse } from 'cookie';
 import { Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserDocument } from '../users/schemas/user.schema';
@@ -82,14 +81,28 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody('groupId') groupId: string,
-  ): void {
+  ): Promise<void> {
     const userId = client.user._id.toString();
     this.logger.log(
       `User ${userId} attempting to join room for group ${groupId}`,
     );
+
+    const group = await this.groupsService.findById(groupId);
+    const isMember = group?.members.some(
+      (member: UserDocument) => member._id.toString() === userId,
+    );
+
+    if (!isMember) {
+      this.logger.warn(
+        `User ${userId} failed to join room for group ${groupId} (not a member).`,
+      );
+      client.emit('error', 'You are not authorized to join this room.');
+      return;
+    }
+
     client.join(groupId);
     this.server.to(groupId).emit('userJoined', { userId, groupId });
     this.logger.log(`User ${userId} joined room for group ${groupId}`);
@@ -158,22 +171,5 @@ export class ChatsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(
       `Message from ${senderId} broadcasted to group ${groupId}.`,
     );
-  }
-
-  private extractJwtFromSocket(socket: Socket): string | null {
-    const authHeader = socket.handshake.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      return authHeader.split(' ')[1];
-    }
-
-    const cookies = socket.handshake.headers.cookie;
-    if (cookies) {
-      const parsedCookies = parse(cookies);
-      if (parsedCookies.access_token) {
-        return parsedCookies.access_token;
-      }
-    }
-
-    return null;
   }
 }
