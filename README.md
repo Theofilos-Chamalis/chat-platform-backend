@@ -206,6 +206,7 @@ Certain AI tools were used to aid me during the development of this project.
 - **WebSocket Scalability**: The current WebSocket implementation uses Socket.IO's default in-memory adapter. This means it only works on a single server instance. If you were to deploy this application on multiple servers behind a load balancer, users connected to different servers would not be able to communicate with each other. Solution: For production, you would need to implement a Redis adapter for Socket.IO (socket.io-redis) to broadcast events across all instances.
 - **Basic Encryption Key Management**: The message encryption key is stored in an environment variable. While this is acceptable for development, in a production environment, this is a security risk. Solution: A production-grade application should use a dedicated secret management service like AWS Key Management Service (KMS) or HashiCorp Vault.
 - **No "List All Public Groups" Endpoint**: The API currently lacks a discovery mechanism for users to find public groups to join. A GET /groups/public endpoint would be a necessary addition for a fully-featured application.
+- **Koyeb Free Tier Limitations**: The Koyeb free tier has a limited number of resources (0.1 vcpu, 256MB memory), a limited number of requests (1000 requests per month) and cold start time (10+ seconds) when not in use. This means that the application is not suitable for production use. Solution: Use a more powerful platform like AWS, GCP, Azure, or DigitalOcean, which would offer more resources and better performance and ability for horizontal scaling if needed.
 
 ---
 
@@ -218,9 +219,9 @@ This application is configured for easy deployment on [Koyeb](https://www.koyeb.
 1.  **Push to GitHub**: Connect your GitHub account to Koyeb and select this repository.
 2.  **Configure Service**: Koyeb will automatically detect the Node.js application. You will need to configure the following:
     - **Build Command**: `npm run build`
-    - **Run Command**: `npm run start:prod`
-    - **Port**: `8080` (or as configured by Koyeb).
-3.  **Environment Variables**: Add all the variables from the `.env.development.example` file (using strong, production-safe secrets) to the Koyeb service's environment variable settings.
+    - **Run Command**: `npm run prod`
+    - **Port**: `4050` (or as configured by Koyeb).
+3.  **Environment Variables**: Add all the variables from your `.env.production` file (using strong, production-safe secrets) to the Koyeb service's environment variable settings. You can use the `.env.example` file as a reference.
 4.  **Deploy**: Koyeb will build and deploy the application. Future pushes to your default branch will automatically trigger new deployments.
 
 You can also use the "Deploy to Koyeb" button for a quick start:
