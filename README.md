@@ -188,6 +188,19 @@ Once the application is running, you can access the interactive API documentatio
 
 ---
 
+## Usage of AI Tools
+
+Certain AI tools were used to aid me during the development of this project.
+
+- **Cursor**: I have used the Cursor IDE to plan out and write the code for the project.
+- **Cursor Tab Model**: I have used Cursor tab model to provide me with quick suggestions and auto-complete parts of the code.
+- **Cursor User Rules (Global)**: I have used the Cursor user rules for Nest.js provided by the [Cursor Directory](https://cursor.directory). This would allow for a more consistent coding style throughout the project and also help me with the code completion.
+- **Cursor Project Rules (mdc file)**: I have created a .mdc file for project specific rules, so that any prompt used with this project would have more context about the general objective of the project and the codebase.
+- **Gemini Pro 2.5**: I used Gemini Pro 2.5 to plan out the project and to generate the README.md file. This has created the implementation plan for the project under the /designs/design.md file. This file is split into implementation phases for each action and feature, so that I and any additional AI model can follow it through the implementation process.
+- **Claude 4 Sonnet**: I used Claude 4 Sonnet to help me with executing the implementation plan and to answer simple questions about the project. This part of the process requires a model that is able to follow a plan and execute it step by step, without deviating from the plan or making assumptions, hence why I have used a non thinking model.
+
+---
+
 ## Deployment on Koyeb
 
 This application is configured for easy deployment on [Koyeb](https://www.koyeb.com/). Koyeb is a developer-friendly serverless platform that can deploy applications directly from a Git repository.
