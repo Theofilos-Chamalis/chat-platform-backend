@@ -201,6 +201,14 @@ Certain AI tools were used to aid me during the development of this project.
 
 ---
 
+## Potential Limitations
+
+- **WebSocket Scalability**: The current WebSocket implementation uses Socket.IO's default in-memory adapter. This means it only works on a single server instance. If you were to deploy this application on multiple servers behind a load balancer, users connected to different servers would not be able to communicate with each other. Solution: For production, you would need to implement a Redis adapter for Socket.IO (socket.io-redis) to broadcast events across all instances.
+- **Basic Encryption Key Management**: The message encryption key is stored in an environment variable. While this is acceptable for development, in a production environment, this is a security risk. Solution: A production-grade application should use a dedicated secret management service like AWS Key Management Service (KMS) or HashiCorp Vault.
+- **No "List All Public Groups" Endpoint**: The API currently lacks a discovery mechanism for users to find public groups to join. A GET /groups/public endpoint would be a necessary addition for a fully-featured application.
+
+---
+
 ## Deployment on Koyeb
 
 This application is configured for easy deployment on [Koyeb](https://www.koyeb.com/). Koyeb is a developer-friendly serverless platform that can deploy applications directly from a Git repository.
