@@ -27,6 +27,7 @@ interface AuthenticatedSocket extends Socket {
 }
 
 @WebSocketGateway({
+  transports: ['websocket'],
   cors: {
     origin: '*',
   },
