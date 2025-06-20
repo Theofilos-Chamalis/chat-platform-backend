@@ -28,12 +28,10 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  await app.listen(configuration.server.port ?? '0.0.0.0');
-  logger.log(
-    `Application is running on: http://localhost:${configuration.server.port}`,
-  );
-  logger.log(
-    `Swagger is running on: http://localhost:${configuration.server.port}/swagger`,
-  );
+  const port = process.env.PORT || configuration.server.port;
+  await app.listen(port, '0.0.0.0');
+
+  logger.log(`Application is running on: ${await app.getUrl()}`);
+  logger.log(`Swagger is running on: ${await app.getUrl()}/swagger`);
 }
 bootstrap();
