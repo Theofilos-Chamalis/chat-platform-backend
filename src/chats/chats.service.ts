@@ -22,6 +22,7 @@ export class ChatsService {
       group: groupId,
       sender: senderId,
       content,
+      timestamp: new Date(),
     });
     const savedMessage = await createdMessage.save();
     this.logger.log(

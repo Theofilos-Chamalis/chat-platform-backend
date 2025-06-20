@@ -6,6 +6,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import * as compression from 'compression';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,6 +16,15 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(compression());
+
+  // Configure WebSocket adapter for Socket.IO
+  app.useWebSocketAdapter(new IoAdapter(app));
+
+  // Enable CORS for WebSocket connections
+  app.enableCors({
+    origin: '*',
+    credentials: true,
+  });
 
   // Swagger setup
   const config = new DocumentBuilder()
@@ -33,5 +43,6 @@ async function bootstrap() {
 
   logger.log(`Application is running on: ${await app.getUrl()}`);
   logger.log(`Swagger is running on: ${await app.getUrl()}/swagger`);
+  logger.log(`WebSocket server is running on port: ${port}`);
 }
 bootstrap();
