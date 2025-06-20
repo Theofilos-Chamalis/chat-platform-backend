@@ -4,7 +4,7 @@ import { UserDocument } from '../../users/schemas/user.schema';
 
 export type GroupDocument = HydratedDocument<Group>;
 
-@Schema({ timestamps: true, autoCreate: true, collection: 'banned-users' })
+@Schema({ timestamps: true })
 export class BannedUser {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   user: UserDocument;
